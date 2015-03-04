@@ -1,0 +1,236 @@
+R Cheatsheet
+Gloria Tian
+Feb 19, 2015
+
+#substr
+substr(x,start,stop)
+x<-"abcdef"
+substr(x,2,4) will return "bcd"
+
+#sub
+find pattern in x and substitute with replacement text
+sub("\\s",".","hello there") returns hello.there
+Note "\s" is a regular expression for finding whitespace;
+use "\\s" instead because "\s" is R escape character
+
+#strsplit(x,split,fixed=F)
+split the element of character vector x at split.
+y<-strsplit("abc","") returns "a""b""c"
+unlist(y)[2] will return "b"
+sapply(y,"[",2) will return "b"
+
+#seq
+generate a sequence, seq(from,to,by)
+indices<-seq(1,10,2)
+indices is c(1,3,5,7,9)
+
+#req
+repeat x N times
+req(x,n)
+y<-rep(1:3,2)
+y is c(1,2,3,1,2,3)
+
+#aggregate
+aggregate(x,by=list(v1,v2),FUN=mean,na.rm=TRUE)
+
+#reshape
+tremendously versatile to restructuring datasets
+install.packages("reshape")
+Basically, you'll "melt" data so that each row is a unique ID-variable combination.
+Then you'll "cast" the melted data into any shape you desire.
+
+mydata:
+ID Time X1 X2
+1   1   5  6
+1   2   3  5
+2   1   6  1
+2   2   2  4
+
+library(reshape)
+melteddata<-melt(mydata,id=(c("id","time")))
+melteddata
+
+ID Time Variable Value
+1   1 X1 5
+1   2 X1 3
+2   1 X1 6
+2   2 X1 2
+1   1 X2 6
+1   2 X2 5
+2   1 X2 1
+2   2 X2 4
+
+#with aggregation
+cast(mydata,id~variable,mean)
+ID X1 X2
+1  4  5.5
+2  4  2.5
+
+cast(mydata,time~variable,mean)
+Time X1  X2
+1    5.5 3.5
+2    2.5 4.5
+
+#without aggregation
+cast(mydata,id+time ~ variable)
+ID Time X1  X2
+1   1    5  6
+1   2    3  5
+2   1    6  1
+2   2    2  4
+
+cast(mydata,id+variable ~ time)
+ID Variable Time1 Time 2
+1     X1      5    3
+1     X2      6    5
+2     X1      6    2
+2     X2      1    4
+
+
+#barplot for categorical var
+#histograms for continuous var
+
+#boxplot for continuous var by plotting five-number summary: min, 
+#lower quantile, median, upper quantile, max
+
+#Using parallel box plots to compare groups
+boxplot(mpg ~ cyl, data= mycars,
+        main = "title",
+        xlab = "number of cylinders",
+        ylab = "miles per gallon")
+
+#kernel density plots
+kernel density estimation is a nonparametric method for estimating the
+probability density function of a random variable
+plot(density(x))
+x is numeric vector
+
+#sm.density.compare() 
+function in the sm package allows you to superimpose
+the kernel density plots of two or more groups. The format is
+sm.density.compare(x, factor)
+
+#descriptive statistics via sapply()
+mystats<- function (x, na.omit = FALSE) {
+  if (na.omit)
+    x <- x[!is.na(x)]
+  m <- mean(x)
+  n <- length(x)
+  s <- sd(x)
+  skew <- sum((x-m)^3/s^3)/n
+  return(c(n=n,mean=m,stdev=s,skew=skew))
+}
+
+sapply(mydata[vars],mystats)
+#kurtosis: a measure of peakedness( the width of peak, tail weight)
+#skewness: a measure of symmetry
+
+#symbol :
+Denotes an interaction between predictor variables. 
+A prediction of y from x, z, and the
+interaction between x and z would be coded y ~ x + z + x:z
+
+#symbol I()
+Elements within the parentheses are interpreted arithmetically. 
+For example, y ~ x + (z + w)^2 would expand to y ~ x + z + w + z:w. 
+In contrast, the code y ~ x + I((z + w)^2) 
+would expand to y ~ x + h, where h is a new variable created by
+squaring the sum of z and w.
+
+#qqplot function
+The qqPlot() function provides a more accurate method of assessing the normality
+assumption than provided by the plot() function in the base package. It plots the
+studentized residuals (also called studentized deleted residuals or jackknifed residuals) against
+a t distribution with n-p-1 degrees of freedom, where n is the sample size and p is the
+number of regression parameters (including the intercept).
+
+#box-cox transformation to normality
+
+#comparing models
+anova(fit1,fit2)
+
+AIC(fit1,fit2)
+The index takes into account a model's statistical fit and the number of
+parameters needed to achieve this fit. Models with smaller AIC values-indicating
+adequate fit with fewer parameters-are preferred.
+
+#Power analysis
+Power analysis allows you to determine the sample size required to detect an
+effect of a given size with a given degree of confidence.
+
+In planning research, the researcher typically pays special attention to 
+four quantities:
+sample size, 
+significance level, 
+power,
+effect size
+
+Specifically:
+! Sample size refers to the number of observations in each condition/group of the
+experimental design.
+! The significance level (also referred to as alpha) is defined as the probability of
+making a Type I error. The significance level can also be thought of as the probability
+of finding an effect that is not there.
+! Power is defined as one minus the probability of making a Type II error. Power
+can be thought of as the probability of finding an effect that is there.
+! Effect size is the magnitude of the effect under the alternate or research hypothesis.
+The formula for effect size depends on the statistical methodology employed
+in the hypothesis testing.
+
+
+Your research goal is typically to maximize the power of your statistical tests while
+maintaining an acceptable significance level and employing as small a sample size
+as possible. That is, you want to maximize the chances of finding a real effect and
+minimize the chances of finding an effect that isn't really there, while keeping study
+costs within reason
+
+> library(pwr)
+> pwr.t.test(d=.8, sig.level=.05, power=.9, type="two.sample",
+             alternative="two.sided")
+Two-sample t test power calculation
+n = 34
+d = 0.8
+sig.level = 0.05
+power = 0.9
+alternative = two.sided
+NOTE: n is number in *each* group
+
+The results suggest that you need 34 participants in each group (for a total of 68 participants)
+in order to detect an effect size of 0.8 with 90 percent certainty and no more
+than a 5 percent chance of erroneously concluding that a difference exists when, in
+fact, it doesn't.
+
+#loess and lowess
+The a bline() function is used to add a linear line of best fit, while the l owess()
+function is used to add a smoothed line. This smoothed line is a nonparametric
+fit line based on locally weighted polynomial regression
+
+#overdispersion for logistic regression
+Overdispersion occurs when the observed variance of the response variable is
+larger than what would be expected from a binomial distribution. Overdispersion can
+lead to distorted test standard errors and inaccurate tests of significance
+
+When overdispersion is present, you can still fit a logistic regression using the glm()
+function, but in this case, you should use the quasibinomial distribution rather than
+the binomial distribution
+
+One way to detect overdispersion is to compare the residual deviance with the
+residual degrees of freedom in your binomial model. If the ratio
+?? =Residual deviance/Residual df
+is considerably larger than 1, you have evidence of overdispersion
+
+#Robust Logistic regression
+Robust logistic regression -The glmRob() function in the robust package can be
+used to fit a robust generalized linear model, including robust logistic regression.
+Robust logistic regression can be helpful when fitting logistic regression
+models to data containing outliers and influential observations.
+
+#Multinomial logistic regression
+Multinomial logistic regression -If the response variable has more than two unordered
+categories (for example, married/widowed/divorced), you can fit a polytomous
+logistic regression using the mlogit() function in the mlogit package.
+
+#Ordinal Logistic regression
+Ordinal logistic regression -If the response variable is a set of ordered categories
+(for example, credit risk as poor/good/excellent), you can fit an ordinal logistic
+regression using the lrm() function in the rms package.
