@@ -1,0 +1,41 @@
+There are two steps here:
+Parse the data. 
+
+Your example is not fully reproducible, is the data in a file, or the variable in a text or factor variable? 
+Let us assume the latter, then if you data.frame is called X, you can do
+ 
+ X$newdate <- strptime(as.character(X$date), "%d/%m/%Y")
+ 
+Now the newdate column should be of type Date.
+Format the data. That is a matter of calling format() or strftime():
+ 
+ format(X$newdate, "%Y-%m-%d")
+
+
+more info here: http://stackoverflow.com/questions/7439977/changing-date-format-in-r
+
+example:
+
+R> nzd <- data.frame(date=c("31/08/2011", "31/07/2011", "30/06/2011"), mid=c(0.8378,0.8457,0.8147))
+R> nzd
+
+        date    mid
+1 31/08/2011 0.8378
+2 31/07/2011 0.8457
+3 30/06/2011 0.8147
+
+R> nzd$newdate <- strptime(as.character(nzd$date), "%d/%m/%Y")
+R> nzd$txtdate <- format(nzd$newdate, "%Y-%m-%d")
+
+R> nzd
+        date    mid    newdate    txtdate
+1 31/08/2011 0.8378 2011-08-31 2011-08-31
+2 31/07/2011 0.8457 2011-07-31 2011-07-31
+3 30/06/2011 0.8147 2011-06-30 2011-06-30
+
+
+
+
+tapply(Data$Humidity,factor(Data$Date), FUN = mean)
+
+
