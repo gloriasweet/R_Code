@@ -1,0 +1,409 @@
+Lesson 5
+========================================================
+2015.1.1
+
+```{r}
+#install packages needed
+
+install.packages('reshape2')
+library(reshape2)
+
+install.packages('ggplot2')
+library('ggplot2')
+
+install.packages('dplyr')
+library('dplyr')
+```
+
+### Multivariate Data
+Notes:
+
+***
+
+### Moira Perceived Audience Size Colored by Age
+Notes:
+
+***
+
+### Third Qualitative Variable
+Notes:
+
+```{r Third Qualitative Variable}
+setwd('/Users/getian/Downloads')
+pf<-read.csv('pseudo_facebook.tsv',sep = '\t')
+
+install.packages('ggplot2')
+library('ggplot2')
+
+ggplot(aes(x = gender, y = age),
+       data = subset(pf, !is.na(gender))) + 
+  geom_boxplot() +
+  stat_summary(fun.y = mean,geom = 'point', shape = 4)
+
+ggplot(aes(x = age, y = friend_count),
+       data = subset(pf, !is.na(gender))) + 
+  geom_line(aes(color= gender), stat = 'summary', fun.y = median) 
+  
+
+```
+
+***
+
+### Plotting Conditional Summaries
+Notes:
+
+```{r Plotting Conditional Summaries}
+
+# Write code to create a new data frame,
+# called 'pf.fc_by_age_gender', that contains
+# information on each age AND gender group.
+
+install.packages('dplyr')
+library('dplyr')
+
+#You can include multiple variables to split the data frame when #using group_by() function in the dplyr package.
+
+age_gender_group <-group_by(subset(pf,!is.na(gender)),age,gender )
+
+pf.fc_by_age_gender <- summarise (age_gender_group,
+           mean_friend_count = mean(friend_count),
+           median_friend_count = median(friend_count),
+           n=n())
+pf.fc_by_age_gender <-arrange(pf.fc_by_age_gender,age,gender)
+
+head(pf.fc_by_age_gender,n=5)
+
+#################################################
+# aggregate(pf$friend_count,by=list(pf$age,pf$gender),mean)
+# aggregate(pf$friend_count,by=list(pf$age,pf$gender),median)
+# aggregate(pf$friend_count,by=list(pf$age,pf$gender),nrow)
+#################################################
+
+#chain function together %.%
+pf.fc_by_age_gender <- pf %.% #save the dataframe
+  filter(!is.na(gender)) %.%
+  group_by(age,gender) %.%
+  summarise(mean_friend_count = mean(friend_count),
+           median_friend_count = median(friend_count),
+           n=n()) %.%
+  ungroup () %.% 
+#The summarize function will automatically remove one level of #grouping (the last group it collapsed).
+  arrange(age)
+
+#plotting
+
+ggplot( aes(x= age, y = median_friend_count), data = pf.fc_by_age_gender) +
+  geom_line(aes(color=gender))
+
+#use color = gender inside the aes() wrapper of ggplot().
+
+ggplot( aes(x= age, y = median_friend_count, color = gender), data = pf.fc_by_age_gender) +
+  geom_line()
+
+#equivalent to the following code
+
+ggplot(aes(x = age, y = friend_count),
+       data = subset(pf, !is.na(gender))) + 
+  geom_line(aes(color= gender), stat = 'summary', fun.y = median) 
+
+```
+
+***
+
+### Thinking in Ratios
+Notes:
+
+***
+
+### Wide and Long Format
+Notes:
+
+***
+
+### Reshaping Data
+Notes:
+
+```{r}
+install.packages('reshape2')
+library(reshape2)
+
+install.packages('ggplot2')
+library('ggplot2')
+
+pf.fc_by_age_gender.wide<-dcast(pf.fc_by_age_gender,
+                                age ~ gender,
+                                value.var = 'median_friend_count')
+
+#important to use quotes around the variable name that is assigned to value.var
+head(pf.fc_by_age_gender.wide)
+
+
+```
+
+
+***
+
+### Ratio Plot
+Notes:
+
+```{r Ratio Plot}
+#adding a horizontal line
+
+ggplot( aes(x=age, y = female/male), data = pf.fc_by_age_gender.wide) +
+  geom_line() +
+  geom_hline(yintercept =1, alpha=0.3, linetype = 1, color ='red')
+
+# The linetype parameter can take the values 0-6:
+# 0 = blank, 1 = solid, 2 = dashed
+# 3 = dotted, 4 = dotdash, 5 = longdash
+# 6 = twodash
+
+```
+
+***
+
+### Third Quantitative Variable
+Notes:
+
+```{r Third Quantitative Variable}
+
+# Create a variable called year_joined
+# in the pf data frame using the variable
+# tenure and 2014 as the reference year.
+
+#pf$year_join <- 2014 - floor((pf$tenure)/365)
+
+pf$year_join <- floor(2014 - pf$tenure/365)
+
+summary(pf$year_join)
+table(pf$year_join)
+```
+
+***
+
+### Cut a Variable
+Notes:
+
+```{r Cut a Variable}
+
+pf$year_joined.bucket <- cut(pf$year_join, c(2004, 2009,2011,2012,2014))
+
+
+
+```
+
+***
+
+### Plotting it All Together
+Notes:
+
+```{r Plotting it All Together}
+
+ggplot(aes(x = age, y = friend_count),
+       data = subset(pf, !is.na(year_joined.bucket))) + 
+  geom_line(aes(color= year_joined.bucket), stat = 'summary', fun.y = median) 
+
+```
+
+***
+
+### Plot the Grand Mean
+Notes:
+
+```{r Plot the Grand Mean}
+
+
+ggplot(aes(x = age, y = friend_count),
+       data = subset(pf, !is.na(year_joined.bucket))) + 
+  geom_line(aes(color= year_joined.bucket), stat = 'summary', fun.y = mean) +
+  geom_line(stat = 'summary', fun.y= mean, linetype = 2, color ='black')
+
+
+
+```
+
+***
+
+### Friending Rate
+Notes:
+
+```{r Friending Rate}
+
+#friend_count/tenure
+with(subset(pf,tenure >= 1), summary(friend_count/tenure))
+
+```
+
+***
+
+```{r Friendships Initiated}
+   
+#a smooth line
+ggplot ( aes(x = tenure, y = friendships_initiated/tenure, 
+         color = year_joined.bucket), 
+         data = subset( pf, tenure >=1)) + 
+  geom_smooth()
+
+```
+
+***
+
+### Bias-Variance Tradeoff Revisited
+Notes:
+
+```{r Bias-Variance Tradeoff Revisited}
+
+ggplot(aes(x = tenure, y = friendships_initiated / tenure),
+       data = subset(pf, tenure >= 1)) +
+  geom_line(aes(color = year_joined.bucket),
+            stat = 'summary',
+            fun.y = mean)
+
+ggplot(aes(x = 7 * round(tenure / 7), y = friendships_initiated / tenure),
+       data = subset(pf, tenure > 0)) +
+  geom_line(aes(color = year_joined.bucket),
+            stat = "summary",
+            fun.y = mean)
+
+ggplot(aes(x = 30 * round(tenure / 30), y = friendships_initiated / tenure),
+       data = subset(pf, tenure > 0)) +
+  geom_line(aes(color = year_joined.bucket),
+            stat = "summary",
+            fun.y = mean)
+
+ggplot(aes(x = 90 * round(tenure / 90), y = friendships_initiated / tenure),
+       data = subset(pf, tenure > 0)) +
+  geom_line(aes(color = year_joined.bucket),
+            stat = "summary",
+            fun.y = mean)
+
+```
+
+***
+
+### Sean's NFL Fan Sentiment Study
+Notes:
+
+***
+
+### Introducing the Yogurt Data Set
+Notes:
+
+***
+
+### Histograms Revisited
+Notes:
+
+```{r Histograms Revisited}
+
+yo<-read.csv('yogurt.csv')
+str(yo)
+yo$id<-factor(yo$id)
+
+qplot(x=price, data = yo)
+
+ggplot( data=yo, aes(x=price)) +
+  geom_histogram()
+
+unique(yo$price)
+table(yo$price)
+```
+
+***
+
+### Number of Purchases
+Notes:
+
+```{r Number of Purchases}
+yo<- transform(yo, all.purchase = strawberry + blueberry + pina.colada + mixed.berry)
+
+summary(yo$all.purchase)
+
+
+```
+
+***
+
+### Prices over Time
+Notes:
+
+```{r Prices over Time}
+
+ggplot( aes(x = time, y = price), data = yo) +
+  geom_point(alpha=1/5)
+
+ggplot( aes(x = time, y = price), data = yo) +
+  geom_jitter(alpha=1/5,shape=21)
+
+```
+
+***
+
+### Sampling Observations
+Notes:
+
+***
+
+### Looking at Samples of Households
+
+```{r Looking at Sample of Households}
+
+set.seed(123)
+sample.ids<-sample(levels(yo$id),16)
+
+ggplot(aes(x=time,y=price),
+       data=subset(yo,id %in% sample.ids)) +
+  facet_wrap(~id) +
+  geom_line() +
+  geom_point(aes(size = all.purchase),pch=1)
+```
+
+***
+
+### The Limits of Cross Sectional Data
+Notes:
+
+***
+
+### Many Variables
+Notes:
+
+***
+
+### Scatterplot Matrix
+Notes:
+
+***
+
+### Even More Variables
+Notes:
+
+***
+
+### Heat Maps
+Notes:
+
+```{r}
+nci <- read.table("nci.tsv")
+colnames(nci) <- c(1:64)
+```
+
+nci.long.samp <- melt(as.matrix(nci[1:200,]))
+names(nci.long.samp) <- c("gene", "case", "value")
+head(nci.long.samp)
+
+ggplot(aes(y = gene, x = case, fill = value),
+  data = nci.long.samp) +
+  geom_tile() +
+  scale_fill_gradientn(colours = colorRampPalette(c("blue", "red"))(100))
+
+***
+
+### Analyzing Three of More Variables
+Reflection:
+
+***
+
+Click **KnitHTML** to see all of your hard work and to have an html
+page of this lesson, your answers, and your notes!
+
