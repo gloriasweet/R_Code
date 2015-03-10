@@ -1,0 +1,575 @@
+---
+title: "An overview of monthly performance - A discussion on Relationships among WinRate, VCR, AvgBidPrice and AvgWinPrice(eCPM) for Video Campaigns"
+author: "Gloria"
+date: "Monday, February 23, 2015"
+output: html_document
+---
+
+***
+
+In this report, I'm looking at our monthly performances regarding video inventory win rate, video completion rate, monthly average bidding price and winning price (i.e. eCPM) for 97 major sites from video inventories on SpotX, LiveRail and MoPub, trying to understand the bidding and winning patterns and the potential relationships among them.
+
+Hope is to  
+  
+  
+(1).understand AdTheorent video inventories, answering questions like:  
+
+* Why, on average, we bid $16-$22 and win with $8 on LiveRail whereas we bid $9-$10 and win $7-$8 on MoPub ?  
+* Does this indicate that we value too high on LiveRail inventory but our competitiors don't ?  
+* Or Does it suggest more competition on MoPub where people's bid price clustered around $8-$10?  
+* If we want to stand out on MoPub, should we increase our bid price?  
+  
+(2).understand margin space, the bid-and-win spread;  
+
+(3).drive actionable insights to help better adjust our bidding strategies.  
+
+
+
+Data collected from aggr skeleton resp  
+Date range: Jan 20 - Feb 22  
+Ad Exchanges of interest: SpotX(43 sites), LiveRail(16 sites), MoPub(38 sites) 
+Number of sites collected: 97  
+
+
+***
+
+
+####Part I: Data Distribution  
+
+***
+
+Firstly, let's look at the data distributions in terms of Win Rate, Average Bid Price, Average Win Price, VCR, respectively for each ad exchange.
+
+
+
+```{r, echo=FALSE, warning=F, message=FALSE,results='hide'}
+
+setwd("C:/Users/Gloria/Documents")
+data<-read.csv("videodata2.csv")
+
+```
+
+
+```{r, echo=FALSE, warning=FALSE,message=FALSE,results='hide'}
+install.packages("car",repos="http://cran.rstudio.com/")
+library(car)
+```
+
+
+```{r, echo=FALSE, warning=FALSE,message=FALSE,results='hide'}
+
+install.packages("sm",repos="http://cran.rstudio.com/")
+library(sm)
+```
+
+
+1.Win Rate (in %) Distribution for Video Inventories per ad exchange
+
+```{r,echo=FALSE}
+sm.density.compare(data$winrate,
+                   group = data$ad_exchange,
+                   color = data$ad_exchange)
+legend("topright",levels(data$ad_exchange),fill=2+(0:nlevels(data$ad_exchange)))
+title(main="Win Rate (in %) Distribution for Video Inventories")
+```
+
+> * Notes: There's NO sites having win rate under 0. What you saw from the graph where win rate ranges from -20% to 0% is just for the purpose of forming a smooth density line. However, there are indeed several sites having win rate 0% - 1%, such as "Trivia Crack Android","Mobdro Online TV".
+
+> * LiveRail has, on average, highest win rate around 30%.
+
+> * Win Rate over MoPub's video inventory is clustering around 10% ( see the peakedness, high kurtosis)
+
+2.Averge Bid Price (in $) Distribution for Video Inventories per ad exchange
+
+```{r,echo=FALSE}
+
+sm.density.compare(data$avgbidprice,
+                   group = data$ad_exchange,
+                   color = data$ad_exchange,
+                   )
+legend("topright",levels(data$ad_exchange),fill=2+(0:nlevels(data$ad_exchange)))
+title(main="Avg Bid Price (in $) Distribution for Video Inventories")
+```
+
+
+> * We bids *high* at the inventories on LiveRail with one peak at $16 and second peak at $22 !
+
+> * From the plot, we knew that inventories from MoPub is not that expensive, at least from our judgement because we bid at them less than $10.
+
+3. Averge Win Price (in $) Distribution for Video Inventories
+```{r,echo=FALSE}
+
+sm.density.compare(data$avgwinprice,
+                   group = data$ad_exchange,
+                   color = data$ad_exchange,
+                   )
+legend("topright",levels(data$ad_exchange),fill=2+(0:nlevels(data$ad_exchange)))
+title(main="Avg Win Price (in $) Distribution for Video Inventories")
+```
+
+
+4.Video Completion Rate (in %) Distribution for Video Inventories
+```{r,echo=FALSE}
+
+sm.density.compare(data$vcr,
+                   group = data$ad_exchange,
+                   color = data$ad_exchange,
+                   )
+legend("topright",levels(data$ad_exchange),fill=2+(0:nlevels(data$ad_exchange)))
+title(main="Video Completion Rate (in %) Distribution for Video Inventories")
+```
+
+> * VCR at LiveRail is high and around 90%, driven by some sites like perk tv.
+
+> * If you want VCR < 70% (if that's really necessary), go to MoPub!
+
+
+
+
+***
+
+####Part II: Exploring relationships among Win Rate /(Video Completion Rate), Average Bid Price and Average Win Price(eCPM) for Video inventories  
+  
+***
+
+
+As examples to illustrate, I collected data from:  
+
+(1).SpotX iOS;  
+
+(2).LiveRail iOS;  
+
+(3).MoPub Android.  
+
+
+Let's look at the specifics one by one.
+
+
+```{r,echo=FALSE}
+spotxios<-subset(data,ad_exchange == "SpotX" & device_os == "iOS")
+spotxand<-subset(data,ad_exchange == "SpotX" & device_os == "Android")
+
+liverailios<-subset(data,ad_exchange == "LiveRail" & device_os == "iOS")
+liverailand<-subset(data,ad_exchange == "LiveRail" & device_os == "Android")
+
+mopubios<-subset(data,ad_exchange == "MoPub" & device_os == "iOS")
+mopuband<-subset(data,ad_exchange == "MoPub" & device_os == "Android")
+
+```
+
+
+
+```{r,echo=FALSE, results='hide',message=FALSE}
+
+install.packages("ggplot2",repos="http://cran.rstudio.com/")
+library(ggplot2)
+
+install.packages("dplyr",repos="http://cran.rstudio.com/")
+library(dplyr)
+```
+
+
+
+
+#####Video Inventory Analysis on SpotX and iOS
+
+
+
+1. Relationship btw Win Rate and Avg Bid Price for Sites from SpotX/iOS
+
+```{r,echo=FALSE}
+ggplot(aes(x=avgbidprice,y=winrate),data=spotxios)+
+  geom_point()+
+  ggtitle("Relationship btw Win Rate and Avg Bid Price for Sites from SpotX/iOS") +
+  xlab("average bid price in $") + 
+  ylab("win rate in %")+
+  theme(strip.text.x = element_text(size=12, face="bold"),
+          strip.text.y = element_text(size=12, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))+
+  theme(axis.title.x = element_text(size=12,face="bold"),
+           axis.title.y=element_text(size=12,face="bold"))
+```
+
+> * the relationship is non-linear, when you increase the bid price from $10 to $20, the win rate increases to some extent, but the marginal gain effect is actually decreasing. 
+
+2. Relationship btw Win Rate and Avg Win Price for Sites from SpotX/iOS
+
+```{r,echo=FALSE}
+ggplot(aes(x=avgwinprice,y=winrate),data=spotxios)+
+  geom_point()+
+  ggtitle("Relationship btw Win Rate and Avg Win Price for Sites from SpotX/iOS") +
+  xlab("average Win price in $") + 
+  ylab("win rate in %")+
+  theme(strip.text.x = element_text(size=12, face="bold"),
+          strip.text.y = element_text(size=12, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))+
+  theme(axis.title.x = element_text(size=12,face="bold"),
+           axis.title.y=element_text(size=12,face="bold"))
+```
+
+> * interestingly, for sites we bid high and have a high win rate, we actually win them at a relative low price; in contrast, for sites we bid low thus a lower win rate, we actually win them at a higher price than the first scenario. Thoughts? 
+
+3. Scatter Plot Matrix for WinRate, Bid Price and Win Price for sites at SpotX/iOS
+
+```{r,echo=FALSE}
+
+
+#scatterplotMatrix
+scatterplotMatrix( ~ winrate + avgbidprice + avgwinprice, 
+                  data=spotxios,
+spread=FALSE, diagonal="histogram",
+main="Scatter Plot Matrix for WinRate, Bid Price and Win Price, SpotX/iOS ")
+```
+
+> * green histogram is the density distribution.
+* green line is the estimated linear regression lines
+* red line is the locally weighted smoothing line based on 5 nearest neighbors.
+
+For those sites whose win rate under 40%, we bid not high (like $11 - $13) and we won impressions at somewhere around $9-$11 ; However, for those sites whose win rate is at 50% - 70%, we actually bid with wide range between $12 - $17 but surprisingly won those impression with anything under $8 ! What does that mean? any thoughts?
+
+
+
+
+4.VCR and Avg Bid Price (SpotX/iOS)  
+
+```{r,echo=FALSE}
+ggplot(aes(x=avgbidprice,y=vcr),data=spotxios)+
+  geom_point()+
+  ggtitle("Relationship btw VCR and Avg Bid Price for Sites from SpotX/iOS") +
+  xlab("average bid price in $") + 
+  ylab("VCR in %")+
+  theme(strip.text.x = element_text(size=12, face="bold"),
+          strip.text.y = element_text(size=12, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))+
+  theme(axis.title.x = element_text(size=12,face="bold"),
+           axis.title.y=element_text(size=12,face="bold"))
+```
+
+> * at the 90% VCR level, bid price is around $11 and $16.
+
+5.VCR and eCPM  
+
+```{r,echo=FALSE}
+ggplot(aes(x=avgwinprice,y=vcr),data=spotxios)+
+  geom_point()+
+  ggtitle("Relationship btw VCR and eCPM for Sites from SpotX/iOS") +
+  xlab("eCPM in $") + 
+  ylab("VCR in %")+
+  theme(strip.text.x = element_text(size=12, face="bold"),
+          strip.text.y = element_text(size=12, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))+
+  theme(axis.title.x = element_text(size=12,face="bold"),
+           axis.title.y=element_text(size=12,face="bold"))
+```
+
+> * at the 90% VCR level, win price is around $7 and $10.
+
+6.Scatter Plot Matrix for VCR, Bid Price and Win Price for sites at SpotX/iOS
+
+```{r,echo=FALSE}
+#scatterplotMatrix
+scatterplotMatrix( ~ vcr + avgbidprice + avgwinprice, 
+                  data=spotxios,
+spread=FALSE, diagonal="histogram",
+main="Scatter Plot Matrix for VCR, Bid Price and Win Price, SpotX/iOS ")
+```
+
+
+***
+
+
+Lastly
+
+####Summary/ Performance Cheatsheet/ Guidance from last-month data
+
+***
+
+
+1. Price Summary for every Win Rate Bucket
+
+```{r,echo=FALSE}
+
+setwd("C:/Users/Gloria/Documents")
+
+data.dplyr<-read.csv("videodata3.csv")
+
+data.dplyr$winrate.bucket<-cut(data.dplyr$winrate,c(0,0.2,0.4,0.6,1))
+
+group1<-group_by(subset(data.dplyr,!is.na(winrate.bucket)),
+                 ad_exchange,winrate.bucket)
+
+data.dplyr1<-summarise(group1,
+                      avgBid = sum(grossbidprice)/sum(bids),
+                      avgWin = sum(grosswinprice)/sum(imps),
+                      n=n())
+data.dplyr1<-arrange (data.dplyr1,ad_exchange,winrate.bucket)
+
+data.dplyr1
+
+
+ggplot(aes(x=avgWin,y=avgBid,color=ad_exchange),data=data.dplyr1)+
+  geom_point(size=4)+
+  facet_wrap(~winrate.bucket,ncol =4)+
+  ggtitle("Price Summary for every WinRate Bucket") +
+  xlab("Average Win price in $") + 
+  ylab("Average Bid price in $")+
+  theme(strip.text.x = element_text(size=12, face="bold"),
+          strip.text.y = element_text(size=12, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))+
+  theme(axis.title.x = element_text(size=12,face="bold"),
+           axis.title.y=element_text(size=12,face="bold"))
+
+```
+
+
+> * This summary is trying to answer questions, for instance, LiveRail, a yielder is seeing a 20% win rate by bidding $16 and win at $9, to what level to increase the bid price in order to achieve a 40% win rate but still maintaing a low eCPM?
+
+2. Price Summary for every VCR Bucket
+
+```{r,echo=FALSE}
+
+data.dplyr$VCR.bucket<-cut(data.dplyr$vcr,c(0.5,0.7,0.8,0.9,1))
+table(data.dplyr$device_os)
+
+#findandReplace
+Replaces<- data.frame(from = c("android","ios"), to= c("Android","iOS"))
+install.packages("DataCombine")
+library(DataCombine)
+data.dplyr.R<-FindReplace(data = data.dplyr,
+                          Var = "device_os",
+                          replaceData = Replaces,
+                          from = "from",
+                          to = "to",
+                          exact = F
+                          )
+
+table(data.dplyr.R$device_os)
+
+#subset android and ios (pay attention to the Or and And)
+
+subsetdata<-data.dplyr.R[which(data.dplyr.R$device_os == "iOS" | 
+                                 data.dplyr.R$device_os == "Android"),]
+
+
+group2<-group_by(subset(subsetdata,!is.na(VCR.bucket)),
+                 ad_exchange,device_os,VCR.bucket)
+
+data.dplyr2<-summarise(group2,
+                      avgBid = sum(grossbidprice)/sum(bids),
+                      avgWin = sum(grosswinprice)/sum(imps),
+                      n=n())
+data.dplyr2<-arrange (data.dplyr2,ad_exchange,device_os,VCR.bucket)
+
+data.dplyr2
+
+
+ggplot(aes(x=avgWin,y=avgBid,color=ad_exchange),data=data.dplyr2)+
+  geom_point(size=4)+
+  facet_wrap(device_os ~ VCR.bucket,ncol =4)+
+  ggtitle("Price Summary for every VCR Bucket") +
+  xlab("Average Win price in $") + 
+  ylab("Average Bid price in $")+
+  theme(strip.text.x = element_text(size=12, face="bold"),
+          strip.text.y = element_text(size=12, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))+
+  theme(axis.title.x = element_text(size=12,face="bold"),
+           axis.title.y=element_text(size=12,face="bold"))
+```
+
+
+
+***
+
+####Appendix
+
+***
+
+
+More Details on
+
+(2).LiveRail iOS;  
+
+(3).MoPub Android.  
+
+
+#####Video Inventory Analysis on LiveRail and iOS
+
+
+
+1. Relationship btw Win Rate and Avg Bid Price for Sites from LiveRail/iOS
+```{r,echo=FALSE}
+ggplot(aes(x=avgbidprice,y=winrate),data=liverailios)+
+  geom_point()+
+  ggtitle("Relationship btw Win Rate and Avg Bid Price for Sites from LiveRail/iOS") +
+  xlab("average bid price in $") + 
+  ylab("win rate in %")+
+  theme(strip.text.x = element_text(size=12, face="bold"),
+          strip.text.y = element_text(size=12, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))+
+  theme(axis.title.x = element_text(size=12,face="bold"),
+           axis.title.y=element_text(size=12,face="bold"))
+```
+
+2. Relationship btw Win Rate and Avg Win Price for Sites from LiveRail/iOS
+```{r,echo=FALSE}
+ggplot(aes(x=avgwinprice,y=winrate),data=liverailios)+
+  geom_point()+
+  ggtitle("Relationship btw Win Rate and Avg Win Price for Sites from LiveRail/iOS") +
+  xlab("average Win price in $") + 
+  ylab("win rate in %")+
+  theme(strip.text.x = element_text(size=12, face="bold"),
+          strip.text.y = element_text(size=12, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))+
+  theme(axis.title.x = element_text(size=12,face="bold"),
+           axis.title.y=element_text(size=12,face="bold"))
+```
+
+
+3. Scatter Plot Matrix for WinRate, Bid Price and Win Price for sites at LiveRail/iOS
+
+```{r,echo=FALSE}
+
+
+#scatterplotMatrix
+scatterplotMatrix( ~ winrate + avgbidprice + avgwinprice, 
+                  data=liverailios,
+spread=FALSE, diagonal="histogram",
+main="Scatter Plot Matrix for WinRate, Bid Price and Win Price, LiveRail/iOS ")
+```
+
+For those sites whose win rate under 40%, we bid not high (like $11 - $13) and we won impressions at somewhere around $8-$10 ; However, for those sites whose win rate is above 50% - 70%, we actually bid with wide and high range between $12 - $17 but surprisingly won those impression with anything under $8 ! What does that mean? 
+
+
+4.Relationship btw VCR and Avg Bid Price for Sites from LiveRail/iOS
+```{r,echo=FALSE}
+ggplot(aes(x=avgbidprice,y=vcr),data=liverailios)+
+  geom_point()+
+  ggtitle("Relationship btw VCR and Avg Bid Price for Sites from LiveRail/iOS") +
+  xlab("average bid price in $") + 
+  ylab("VCR in %")+
+  theme(strip.text.x = element_text(size=12, face="bold"),
+          strip.text.y = element_text(size=12, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))+
+  theme(axis.title.x = element_text(size=12,face="bold"),
+           axis.title.y=element_text(size=12,face="bold"))
+```
+
+
+5.Relationship btw VCR and Avg Win Price for Sites from LiveRail/iOS
+```{r,echo=FALSE}
+ggplot(aes(x=avgwinprice,y=vcr),data=liverailios)+
+  geom_point()+
+  ggtitle("Relationship btw VCR and Avg Win Price for Sites from LiveRail/iOS") +
+  xlab("average win price in $") + 
+  ylab("VCR in %")+
+  theme(strip.text.x = element_text(size=12, face="bold"),
+          strip.text.y = element_text(size=12, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))+
+  theme(axis.title.x = element_text(size=12,face="bold"),
+           axis.title.y=element_text(size=12,face="bold"))
+```
+
+
+
+6.Scatter Plot Matrix for VCR, Bid Price and Win Price for sites at LiveRail/iOS
+
+```{r,echo=FALSE}
+#scatterplotMatrix
+scatterplotMatrix( ~ vcr + avgbidprice + avgwinprice, 
+                  data=liverailios,
+spread=FALSE, diagonal="histogram",
+main="Scatter Plot Matrix for VCR, Bid Price and Win Price, LiveRail/iOS ")
+```
+
+***
+
+
+#####Video Inventory Analysis on MoPub and Android
+
+
+1. Relationship btw Win Rate and Avg Bid Price for Sites from MoPub/iOS
+```{r,echo=FALSE}
+ggplot(aes(x=avgbidprice,y=winrate),data=mopuband)+
+  geom_point()+
+  ggtitle("Relationship btw Win Rate and Avg Bid Price for Sites from MoPub/iOS") +
+  xlab("average bid price in $") + 
+  ylab("win rate in %")+
+  theme(strip.text.x = element_text(size=12, face="bold"),
+          strip.text.y = element_text(size=12, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))+
+  theme(axis.title.x = element_text(size=12,face="bold"),
+           axis.title.y=element_text(size=12,face="bold"))
+```
+
+2. Relationship btw Win Rate and Avg Win Price for Sites from MoPub/iOS
+```{r,echo=FALSE}
+ggplot(aes(x=avgwinprice,y=winrate),data=mopuband)+
+  geom_point()+
+  ggtitle("Relationship btw Win Rate and Avg Win Price for Sites from MoPub/iOS") +
+  xlab("average Win price in $") + 
+  ylab("win rate in %")+
+  theme(strip.text.x = element_text(size=12, face="bold"),
+          strip.text.y = element_text(size=12, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))+
+  theme(axis.title.x = element_text(size=12,face="bold"),
+           axis.title.y=element_text(size=12,face="bold"))
+```
+
+
+3. Scatter Plot Matrix for WinRate, Bid Price and Win Price for sites at MoPub/iOS
+
+```{r,echo=FALSE}
+
+
+#scatterplotMatrix
+scatterplotMatrix( ~ winrate + avgbidprice + avgwinprice, 
+                  data=mopuband,
+spread=FALSE, diagonal="histogram",
+main="Scatter Plot Matrix for WinRate, Bid Price and Win Price, MoPub/iOS ")
+```
+
+For those sites whose win rate under 40%, we bid not high (like $11 - $13) and we won impressions at somewhere around $8-$10 ; However, for those sites whose win rate is above 50% - 70%, we actually bid with wide and high range between $12 - $17 but surprisingly won those impression with anything under $8 ! What does that mean? 
+
+
+4.Relationship btw VCR and Avg Bid Price for Sites from MoPub/iOS
+```{r,echo=FALSE}
+ggplot(aes(x=avgbidprice,y=vcr),data=mopuband)+
+  geom_point()+
+  ggtitle("Relationship btw VCR and Avg Bid Price for Sites from MoPub/iOS") +
+  xlab("average bid price in $") + 
+  ylab("VCR in %")+
+  theme(strip.text.x = element_text(size=12, face="bold"),
+          strip.text.y = element_text(size=12, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))+
+  theme(axis.title.x = element_text(size=12,face="bold"),
+           axis.title.y=element_text(size=12,face="bold"))
+```
+
+
+5.Relationship btw VCR and Avg Win Price for Sites from MoPub/iOS
+```{r,echo=FALSE}
+ggplot(aes(x=avgwinprice,y=vcr),data=mopuband)+
+  geom_point()+
+  ggtitle("Relationship btw VCR and Avg Win Price for Sites from MoPub/iOS") +
+  xlab("average win price in $") + 
+  ylab("VCR in %")+
+  theme(strip.text.x = element_text(size=12, face="bold"),
+          strip.text.y = element_text(size=12, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))+
+  theme(axis.title.x = element_text(size=12,face="bold"),
+           axis.title.y=element_text(size=12,face="bold"))
+```
+
+
+
+6.Scatter Plot Matrix for VCR, Bid Price and Win Price for sites at MoPub/iOS
+
+```{r,echo=FALSE}
+#scatterplotMatrix
+scatterplotMatrix( ~ vcr + avgbidprice + avgwinprice, 
+                  data=mopuband,
+spread=FALSE, diagonal="histogram",
+main="Scatter Plot Matrix for VCR, Bid Price and Win Price, MoPub/iOS ")
+```
+
+
