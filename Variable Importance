@@ -1,3 +1,5 @@
+http://topepo.github.io/caret/varimp.html
+
 Variable importance evaluation functions can be separated into two groups: 
 those that use the model information and those that do not. 
 The advantage of using a model-based approach is that is more closely tied to 
