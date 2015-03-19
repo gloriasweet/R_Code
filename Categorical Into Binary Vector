@@ -1,0 +1,18 @@
+#Converting categorical variables to a binary vector for use in clustering
+#To convert a many-valued categorical nominal (not ordered) variable 
+#for a dataset to a series of binary vectors, 
+#for e.g. clustering, you can do use the dummies package as follows:
+
+install.packages("dummies")
+library(dummies)
+dummy(dative$SemanticClass)
+
+#Say you want to do get distances between datapoints with 
+#multiple many-valued features(e.g. in order to allow you to do clustering), you will need to convert them all and combine them. For example to convert and combine two categorical variables in the first 100 datapoints from the dative dataset, you can do the following: 
+
+recodeddativecats = cbind(dummy(dative[1:100,]$SemanticClass),dummy(dative[1:100,]$AccessOfTheme))
+
+#This represents each data-point as a series of binary values. 
+#You can then find the distances between the datapoints as follows:
+
+x = dist(recodeddativecats,method="binary")
