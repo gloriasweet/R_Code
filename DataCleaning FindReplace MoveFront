@@ -36,3 +36,36 @@ NewOrder2 <- MoveFront(OldOrder, c("B", "A"))
 names(NewOrder2)
 ## [1] "B" "A" "C"
 
+#################### Use Factor Function indicating levels and labels ######################
+install.packages("dplyr",repos="http://cran.rstudio.com/")
+library(dplyr)
+
+group1<-group_by(clientx, broker_name)
+clientx1<-summarise(group1,
+                    sum.clientx.sales = sum(client_x_sales),
+                    count.sales=n())
+clientx1<-arrange (clientx1,broker_name)
+
+clientx1<-clientx1[order(clientx1$sum.clientx.sales,decreasing=T),]
+
+#####top 5 brokers contributing the most to gross mutual fund sales for client X 
+clientx1$broker_name<-factor(clientx1$broker_name, 
+                            levels=c("717098","751283","136067","59977","286805"),
+                            labels=c("CLIENT X","MERRILL LYNCH",
+                                     "MORGAN STANLEY SMITH BARNEY","EDWARD JONES","UBS FINANCIAL SERVICES"))
+                              
+
+
+########### plyr function for translation #################
+install.packages("plyr")
+library(plyr)
+clientx1$broker_name<-factor(clientx1$broker_name)
+clientx1$broker_name<-revalue(clientx1$broker_name, c("717098"="CLIENT X",
+                               "751283"="MERRILL LYNCH",
+                               "136067"="MORGAN STANLEY SMITH BARNEY",
+                               "59977"="EDWARD JONES",
+                               "286805"="UBS FINANCIAL SERVICES"))
+
+
+
+
