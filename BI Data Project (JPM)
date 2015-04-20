@@ -1,0 +1,715 @@
+
+***
+
+This report is to understand mutual fund sales performance for client X and the industry, as well as to share some interesting findings along the road. The goal is to storytelling with the data and uncover actionable insights from the historical sales performance so that to steer the future investment, sales and fund distributions.
+
+The analysis consists of two parts, part I focuses on the sales data regarding the mutual fund that client X produced, part II summerizes the stories for the overall industry mutual fund sales.
+
+Additionally, I am particularly interested in the top performers in terms of brokers, fund categories, and cities/states, and I'm trying to answer questions such as who is the top performing broker that bought the most funds from client X and from the industry? What are the top 5 fund categories that this broker has invested in? etc.
+
+
+***
+
+##PART I : Client X Mutual Fund Sales Performance Analysis  
+
+Data Preparation:  
+A subset of the overall data (combined first file and second file) where "client x sales" has valid number that is greater than zero, i.e., rows indicating that brokers who have transaction with client x mutual fund
+
+###1. Overview  
+
+1.1 Statistical Six-Number Summary  
+
+1.2 Scatterplot of Each Broker's Performance
+
+
+***
+
+####1.1 Statistical Six-Number Summary on "Client X" Fund Sales
+
+```{r,echo=FALSE,message=FALSE}
+#data preparation
+setwd("/Users/Gloria/Desktop/Data Project")
+#setwd("/Users/getian/Desktop/JPM AM BI")
+data1<-read.csv("first_file.csv")
+data2<-read.csv("second_file.csv")
+data<-rbind(data1,data2)
+clientx<-subset(data,client_x_sales != 0)
+
+```
+
+
+
+```{r}
+temp1<-aggregate(data$total_sales, list(broker = data$broker),FUN = sum,na.rm=TRUE)
+temp1<-temp1[order(temp1$x,decreasing=T),]
+
+temp2<-aggregate(data$total_sales, list(broker = data$broker),FUN = sum)
+temp2<-temp2[order(temp2$x,decreasing=T),]
+```
+
+
+
+
+```{r, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+install.packages("ggplot2",repos="http://cran.rstudio.com/")
+library(ggplot2)
+
+install.packages("dplyr", repos="http://cran.rstudio.com/")
+library(dplyr)
+
+#####reshape the dataset clientx
+#####group by broker name
+group1<-group_by(clientx, broker_name)
+clientx1<-summarise(group1,
+                    sum.clientx.sales = sum(client_x_sales),
+                    count.sales=n())
+clientx1<-arrange (clientx1,broker_name)
+clientx1<-clientx1[order(clientx1$sum.clientx.sales,decreasing=T),]
+
+
+```
+
+Here are the statistics showing the minimum, 1st quantile, median, mean, 3rd quantile and maximum numbers regarding client x mutual fund sales that each broker bought:
+
+```{r,echo=FALSE, message=FALSE}
+#summary
+
+statistics<-summary(clientx1$sum.clientx.sales)
+#format(statistics, big.mark=",", scientific=FALSE)
+statistics
+```
+
+_Question?_ 
+
+The Min number looks weird, how to explain a transaction having the amount $2? Is it a valid number? Who is conducting that transaction?  
+
+```{r,echo=FALSE, message=FALSE}
+clientx1[which(clientx1$sum.clientx.sales == 2),]
+
+```
+
+Who is conducting that transaction?  
+* CSCA CAPITAL ADVISORS, LLC
+
+ 
+
+####1.2 Scatterplot  
+
+* An overview of the transaction performance for all the brokers who purchased client X mutual fund in Q1, 2013  
+* Every point indicating a unique broker
+* X axis refers to the count of transactions/sales of Client X mutual fund  
+* Y axis refers to the total amount of sales of this broker
+* In the following four plots, the difference is in the X axis scales (i.e. the number/count of transactions), which changes from 15,000 to 4,000 to 400 to 50. The hope is to zoom in the plot for an in-depth view over the clusters.
+* The plot shows some brokers only conduct a few transactions but each transaction is having a large sales volume (> $5,000,000); whereas some others are buying very frequently with more than 30 times a quarter but each transaction amount is relatively small (< $250,000)
+
+
+```{r, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+
+#graphcially showing the comparison
+p1<- qplot(count.sales,sum.clientx.sales, data =clientx1, geom=c("point","smooth")) +
+  xlab("sales count")+
+  ylab("Total Sales Volume")
+
+p2<- qplot(count.sales,sum.clientx.sales, data =clientx1, 
+      xlim = c(0,4000),
+      geom=c("point","smooth")) +
+  xlab("sales count")+
+  ylab("Total Sales Volume")
+
+p3<- qplot(count.sales,sum.clientx.sales, data =clientx1, 
+      xlim = c(0,400),
+      ylim = c(0,10000000),
+      geom=c("point","smooth")) +
+  xlab("sales count")+
+  ylab("Total Sales Volume")
+
+p4<- qplot(count.sales,sum.clientx.sales, data =clientx1, 
+      xlim = c(0,50),
+      ylim = c(0,1000000),
+      geom=c("point","smooth")) +
+  xlab("sales count")+
+  ylab("Total Sales Volume")
+
+install.packages("gridExtra",repos="http://cran.rstudio.com/")
+library(gridExtra)
+grid.arrange(arrangeGrob(p1, p2, p3, p4, ncol=2),
+             main = textGrob("Scatterplot of the Sales Performance for Each Broker 
+(with Sales Count in Different Scales)", gp=gpar(fontsize = 12,fontface = "bold")))
+
+
+
+```
+
+  
+***
+
+###2. Top 5 Performers   
+  
+  
+2.1 Brokers   
+
+2.2 Fund Categories  
+
+2.3 City and States  
+  
+    
+    
+####2.1 Top 5 brokers who drove the most mutual fund sales that Client X has produced
+
+
+```{r,echo=FALSE,message=FALSE,fig.width=8, fig.height=6}
+
+#####reshape the dataset clientx
+#####group by broker name
+#####Interpretation
+clientx1$broker_name<-factor(clientx1$broker_name, 
+                            levels=c("717098","751283","136067","59977","286805"),
+                            labels=c("CLIENT X","MERRILL LYNCH",
+                                     "MORGAN STANLEY SMITH BARNEY","EDWARD JONES","UBS FINANCIAL SERVICES"))
+                              
+#top 5 brokers contributing the most to gross mutual fund sales for client X 
+broker<-clientx1[1:5,]
+broker
+
+#qplot
+qplot(broker_name, sum.clientx.sales, data=broker, geom= "point",colour=broker_name,
+      size = I(4)) +
+  theme(text = element_text(),
+        axis.text.x = element_text(angle=45, vjust=1,size="8"),
+        axis.title=element_text(face="bold.italic",size="10", color="brown"),
+        plot.title=element_text(family="Times", face="bold", size=12))+
+  ggtitle("Client X Mutual Fund Sales Overview 
+  (Top 5 Brokers)")+
+  xlab ("top 5 Brokers")+
+  ylab(" Sum of Sales")
+
+```
+
+
+####2.2 Top 5 fund categories being purchased the most
+
+
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+
+#####reshape the dataset clientx
+#####group by broker name
+group2<-group_by(clientx, fund_category)
+clientx2<-summarise(group2,
+                    sum.clientx.sales = sum(as.numeric(client_x_sales)),
+                    count.sales=n())
+clientx2<-arrange (clientx2,fund_category)
+clientx2<-clientx2[order(clientx2$sum.clientx.sales,decreasing=T),]
+#####Interpretation
+clientx2$fund_category<-factor(clientx2$fund_category, 
+                            levels=c("624101","716215","136400","323759","64599"),
+                            labels=c("Multi Asset Alloc","Intermediate-Term Bond",
+                                     "Nontrad Multisect Bond","Mid Cap Value","Large Value"))
+  
+category<-clientx2[1:5,]
+category
+
+#qplot
+qplot(fund_category, sum.clientx.sales, data=category, geom= "point",colour=fund_category,
+      size = I(4)) +
+  theme(text = element_text(),
+        axis.text.x = element_text(angle=45, vjust=1,size="8"),
+        axis.title=element_text(face="bold.italic",size="10", color="brown"),
+        plot.title=element_text(family="Times", face="bold", size=12))+
+  ggtitle("Client X Mutual Fund Sales Overview 
+  (Top 5 Fund Category)")+
+  xlab ("top 5 fund categories")+
+  ylab(" Sum of Sales")
+
+                      
+
+```
+
+  
+  
+####2.3 Top 5 Cities and States 
+  
+Top 5 cities and states who have seen the most amount of transactions
+  
+  
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+#####group by city states
+group3<-group_by(clientx, city_state)
+clientx3<-summarise(group3,
+                    sum.clientx.sales = sum(as.numeric(client_x_sales)),
+                    count.sales=n())
+clientx3<-arrange (clientx3,city_state)
+clientx3<-clientx3[order(clientx3$sum.clientx.sales,decreasing=T),]
+
+clientx3$city_state<-factor(clientx3$city_state, 
+                            levels=c("3259987","1975042","6461365","7220599","2308984"),
+                            labels=c("New York---NY","Houston---TX",
+                                     "Atlanta---GA","Los Angeles---CA","Chicago---IL"))
+
+city_state<-clientx3[1:5,]
+city_state
+
+#qplot
+qplot(city_state, sum.clientx.sales, data=city_state, geom= "point",colour=city_state,
+      size=I(4)) +
+  theme(text = element_text(),
+        axis.text.x = element_text(angle=45, vjust=1,size="8"),
+        axis.title=element_text(face="bold.italic",size="10", color="brown"),
+        plot.title=element_text(family="Times", face="bold", size=12)) +
+  ggtitle("Client X Mutual Fund Sales Overview 
+  (Top 5 City/State)") +
+  xlab ("top 5 Cities/States")+
+  ylab(" Sum of Sales")
+  
+
+```
+
+***
+
+
+###3. Integrated Storytelling with Client X Mutual Fund Sales Data
+  
+  
+####3.1 Top 5 Brokers and their Top 5 Fund Categories
+
+```{r,echo=FALSE, results='hide', message=FALSE, warning=FALSE,fig.width=8, fig.height=9}
+#####for the top 5 brokers, what are the fund categories they are selling the most?
+#####group by broker_name and fund_category
+temp1<-subset(clientx, broker_name == 717098 | broker_name == 751283
+              | broker_name == 136067 | broker_name == 59977 | broker_name == 286805)
+
+group4<-group_by(temp1, broker_name,fund_category)
+clientx4<-summarise(group4,
+                    sum.clientx.sales = sum(client_x_sales),
+                    count.sales=n())
+clientx4<-arrange (clientx4,broker_name,fund_category)
+#clientx2<-clientx2[order(clientx2$sum.clientx.sales,decreasing=T),]
+#head(clientx1,n=5)
+#clientx4.1<-clientx4[order(clientx4$broker_name,-clientx4$sum.clientx.sales),]
+setwd("/Users/getian/Desktop/JPM AM BI")
+broker_fund<-read.csv("broker_fundcategory.csv")
+
+#qplot
+qplot(fund_category, sum.clientx.sales, data=broker_fund, geom= "point",colour=broker_name,
+      size= sum.clientx.sales) +
+  facet_wrap(~ broker_name, ncol = 1)+
+  theme(text = element_text(),
+        axis.text.x = element_text(angle=45, vjust=1,size="8"),
+        axis.title=element_text(face="bold.italic",size="10", color="brown"),
+        plot.title=element_text(family="Times", face="bold", size=12))+
+  ggtitle("Client X Mutual Fund Sales Overview -
+  (Top 5 Brokers and their Top 5 Fund Categories)")+
+  xlab ("Fund Categories")+
+  ylab(" Sum of Sales")+
+  theme(strip.text.x = element_text(size=10, face="bold"),
+          strip.text.y = element_text(size=10, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))
+
+
+```
+
+* Intermediate Term Bond, Large Value, Mid-Cap Value, Multi Asset Alloc and Nontrad Multisect Bond are the most popular fund choices that those big players have purchased
+  
+####3.2 Top 5 Brokers, their Geo Locations and Sales Volume
+
+```{r,echo=FALSE, results='hide', message=FALSE, warning=FALSE,fig.width=8, fig.height=9}
+#This is to prepare the dataste all
+#install.packages("sqldf")
+#library(sqldf)
+#all<- sqldf("
+#     select broker_name,fund_category,city_state, sum(client_x_sales) as sum_clientx_sales
+#     from temp1
+#    group by broker_name,fund_category,city_state     
+#      ")
+#all<-all[order(all$broker_name,-all$sum_clientx_sales),]
+#write.csv(all, file = "all.csv",)
+
+setwd("/Users/getian/Desktop/JPM AM BI")
+all<-read.csv("all.csv")
+
+#qplot
+qplot(city_state, sum_clientx_sales, data=all, geom= "point",colour=broker_name,
+      size= sum_clientx_sales) +
+  facet_wrap(~broker_name, ncol=1)+
+  theme(text = element_text(),
+        axis.text.x = element_text(angle=45, vjust=1,size="8"),
+        axis.title=element_text(face="bold.italic",size="10", color="brown"),
+        plot.title=element_text(family="Times", face="bold", size=12))+
+   ggtitle("Client X Mutual Fund Sales Overview -
+  (Top 5 Brokers and their Geo Locations)")+
+  xlab ("City and State")+
+  ylab(" Sum of Sales") +
+  theme(strip.text.x = element_text(size=10, face="bold"),
+          strip.text.y = element_text(size=10, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))
+
+
+
+
+```
+
+  
+* All those big players except Edward Jones have their offices at New York.
+    
+####3.3 Fund Categories and Geo Locations
+
+* Client X has office across the country and the New York office has seen the most transactions.
+* Multi Asset Alloc is the most popular fund category across the country, followed by nontrad multisect bond and intermediate term bond.
+
+
+```{r,echo=FALSE, results='hide', message=FALSE, warning=FALSE,fig.width=8, fig.height=9}
+#qplot
+qplot(city_state, sum_clientx_sales, data=all, geom= "point",colour=fund_category,
+      size= sum_clientx_sales) +
+  facet_wrap(~fund_category, ncol=1)+
+  theme(text = element_text(),
+        axis.text.x = element_text(angle=45, vjust=1,size="8",face="bold"),
+        axis.title=element_text(face="bold.italic",size="10", color="brown"),
+        plot.title=element_text(family="Times", face="bold", size=12))+
+  ggtitle("Client X Mutual Fund Sales Overview -
+  (Fund Categories and their Geo Locations)")+
+  xlab ("fund category")+
+  ylab(" Sum of Sales")+
+  theme(strip.text.x = element_text(size=10, face="bold"),
+          strip.text.y = element_text(size=10, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))
+
+```
+
+
+***
+
+##Part II: Industry Mutual Fund Sales Performance Analysis 
+  
+  
+Data Preparation:   
+  
+  
+This part works on the combined datasets of first file and second file, looking at transactions on the industry mutual fund sales -- including client X fund.  
+
+  
+***
+
+###1. Overview of the industry mutual fund sales 
+  
+1.1 Statistical Six-Number Summary on Industry Fund Sales   
+
+1.2 Negative Sales Number  
+
+1.3 Importance and Popularity of Client X Fund in the Industry  
+
+  
+***
+
+####1.1 Statistical Six-Number Summary on **Industry** Fund Sales  
+
+
+```{r}
+summary(data$total_sales)
+```
+
+  
+From above, we saw some negative sales numbers, let's take a deeper look.  
+
+    
+####1.2 Negative Sales Number  
+  
+
+Interesting? questions ?   
+There are 537 **total_sales** negative numbers. Potential explanation ?  
+Here is a subset of the data showing negative total sales (limit 5 observations)
+
+```{r, echo=FALSE,message=FALSE, warning=FALSE}
+#there are 537 sales are negative
+negative<-subset(data, data$total_sales < 0)
+head(negative, n=5)
+```
+
+
+####1.3 Importance and Popularity of Client X Fund in the Industry  
+
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+group.t1<-group_by(data, broker_name)
+total1 <-summarise(group.t1,
+                    total.sales = sum(total_sales),
+                    count.sales=n())
+total1<-arrange (total1,broker_name)
+total1<-total1[order(total1$total.sales,decreasing=T),]
+
+#How many unique brokers only sell Client X Mutual Fund
+dim(clientx1)[1]
+#total number of unique brokers 
+dim(total1)[1]
+
+
+```{r,echo=FALSE,message=FALSE, warning=FALSE}
+#clientx1$sum.clientx.sales<-as.numeric(clientx1$sum.clientx.sales)
+#sum(clientx1$sum.clientx.sales)
+#sum(clientx1$count.sales)
+#total1$total.sales <- as.numeric(total1$total.sales)
+#sum(total1$total.sales, na.rm = T)
+#sum(total1$count.sales, na.rm = T)
+```
+
+
+* There are 346 unique brokers who purchased a total of $6,805,238,840 client X mutual fund with 79,551 transactions in Q1; whereas there are 1,603 brokers who bought all kinds of mutual funds (including client X funds) amounting a total of $43,241,014,613 during the same period, with 895,248 total count of transactions.
+  
+* Some Thoughts:
+    + Popularity of client x mutual fund among all the brokers : 346/1603 = 21.58%
+    + Total Sales Volume Percentage : $6,805,238,840/$43,241,014,613 = 15.73%
+    + Transaction Percentage : 79,551/895,248 = 8.89%
+    
+
+
+***
+
+
+###2. Top 5 Performers  
+
+2.1 Brokers  
+
+2.2 Fund Categories  
+
+2.3 City and States  
+
+
+
+
+####2.1 Top 5 brokers who drove the most mutual fund sales 
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE,fig.width=8}
+
+group.t1<-group_by(data, broker_name)
+total1 <-summarise(group.t1,
+                    total.sales = sum(total_sales),
+                    count.sales=n())
+total1<-arrange (total1,broker_name)
+total1<-total1[order(total1$total.sales,decreasing=T),]
+
+
+#####reshape the dataset clientx
+#####group by broker name
+#####Interpretation
+total1$broker_name<-factor(total1$broker_name, 
+                            levels=c("934654","394410","201894","31781","930021"),
+                            labels=c("COMMONWEALTH FINANCIAL NETWORK","NORTHWESTERN MUTUAL INVESTMENT",
+                                     "WELLS FARGO","STIFEL, NICOLAUS & COMPANY",
+                                     "CETERA ADVISOR NETWORKS"))
+                              
+#top 5 brokers contributing the most to gross mutual fund sales for client X 
+broker.t<-total1[1:5,]
+broker.t
+
+#qplot
+qplot(broker_name, total.sales, data=broker.t, geom= "point",colour=broker_name,
+      size = I(4)) +
+ theme(text = element_text(),
+        axis.text.x = element_text(angle=45, vjust=1,size="8"),
+        axis.title=element_text(face="bold.italic",size="10", color="brown"),
+        plot.title=element_text(family="Times", face="bold", size=12))+
+  ggtitle("Industry Mutual Fund Sales Overview 
+  (Top 5 Brokers)")+
+  xlab ("top 5 brokers")+
+  ylab(" Sum of Sales")
+
+
+```
+
+
+* The top 5 brokers who purchased the most mutual funds from industry are different from those who purchased the most client X mutual funds.
+
+
+####2.2 Top 5 fund categories
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+group.t2<-group_by(data, fund_category)
+total2 <-summarise(group.t2,
+                    total.sales = sum(total_sales),
+                    count.sales=n())
+total2<-arrange (total2,fund_category)
+total2<-total2[order(total2$total.sales,decreasing=T),]
+#####reshape the dataset clientx
+#####group by broker name
+#####Interpretation
+total2$fund_category<-factor(total2$fund_category, 
+                            levels=c("445354","323759","406128","303251","830673"),
+                            labels=c("Emerging Markets Bond","Mid-Cap Value",
+                                     "Inflation-Protected Bond","Small Growth",
+                                     "Multialternative"))
+                              
+#top 5 brokers contributing the most to gross mutual fund sales for client X 
+category.t<-total2[1:5,]
+category.t
+
+
+#qplot
+qplot(fund_category, total.sales, data=category.t, geom= "point",colour=fund_category,
+      size = I(4)) +
+  theme(text = element_text(),
+        axis.text.x = element_text(angle=45, vjust=1,size="8",face="bold"),
+        axis.title=element_text(face="bold.italic",size="10", color="brown"),
+        plot.title=element_text(family="Times", face="bold", size=12))+
+  ggtitle("Industry Mutual Fund Sales Overview
+  (Top 5 Fund Category)")+
+  xlab ("top 5 fund categories")+
+  ylab(" Sum of Sales")
+
+```
+
+* A recap from top 5 fund categories for client x fund: Multi Asset Alloc, Intermediate-Term Bond, Nontrad Multisect Bond, Large Value, Mid Cap Value.   
+
+* Only Mid Cap Value is the overlapping choice.
+
+
+####2.3 Top 5 City and States
+
+```{r,echo=FALSE,  message=FALSE, warning=FALSE}
+
+group.t3<-group_by(data, city_state)
+total3 <-summarise(group.t3,
+                    total.sales = sum(total_sales),
+                    count.sales=n())
+total3<-arrange (total3,city_state)
+total3<-total3[order(total3$total.sales,decreasing=T),]
+
+
+#####reshape the dataset clientx
+#####group by broker name
+#####Interpretation
+total3$city_state<-factor(total3$city_state, 
+                            levels=c("7957377","2793870","3503446","2771417","2120914"),
+                            labels=c("Minneapolis---MN","San Francisco---CA",
+                                     "Boston---MA","Cincinnati---OH",
+                                     "Dallas---TX"))
+                              
+#top 5 brokers contributing the most to gross mutual fund sales for client X 
+city.t<-total3[1:5,]
+city.t
+
+#qplot
+qplot(city_state, total.sales, data=city.t, geom= "point",colour=city_state,
+      size = I(4)) +
+  theme(text = element_text(),
+        axis.text.x = element_text(angle=45, vjust=1,size="8",face="bold"),
+        axis.title=element_text(face="bold.italic",size="10", color="brown"),
+        plot.title=element_text(family="Times", face="bold", size=12))+
+  ggtitle("Industry Mutual Fund Sales Overview
+  (Top 5 City/State)")+
+  xlab ("top 5 Cities/States")+
+  ylab(" Sum of Sales")
+
+```
+
+
+* Note: We didn't see New York this time ?
+
+***
+
+###3. Integrated stories
+
+I'm interested in the top 5 brokers who bought the most industry mutual funds, what are their top level fund investement categories? what are the geo locations ? etc. 
+
+```{r,echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+broker.t
+```
+
+####3.1 How top 5 brokers distributed their purchase across the country
+
+```{r,echo=FALSE, results='hide', message=FALSE, warning=FALSE,fig.width=9, fig.height=9}
+
+temp2<-subset(data, broker_name == 934654 | broker_name == 394410
+              | broker_name == 201894 | broker_name == 31781 | broker_name == 930021)
+
+#This is to prepare the dataste all
+#install.packages("sqldf")
+#library(sqldf)
+
+#total_sales <- sqldf("
+#            select broker_name,fund_category,city_state, sum(total_sales) as total_sales
+#            from temp2
+#            group by broker_name,fund_category,city_state     
+#           ")
+
+#total_sales<-total_sales[order(total_sales$broker_name,-total_sales$total_sales),]
+#write.csv(total_sales, file = "total_sales.csv",)
+
+#setwd("/Users/Gloria/Desktop/Data Project")
+setwd("/Users/getian/Desktop/JPM AM BI")
+total_sales_final<-read.csv("total_sales_final.csv")
+
+#qplot
+qplot(city_state, total_sales, data=total_sales_final, geom= "point",colour=broker_name,
+      size= total_sales) +
+  facet_wrap(~ broker_name, ncol=1)+
+  theme(text = element_text(),
+        axis.text.x = element_text(angle=45, vjust=1,size="8",face="bold"),
+        axis.title=element_text(face="bold.italic",size="10", color="brown"),
+        plot.title=element_text(family="Times", face="bold", size=12))+
+  ggtitle("Industry Mutual Fund Sales Overview
+  (How top 5 brokers distributed their purchase across the country)")+
+  xlab ("City and State")+
+  ylab(" Sum of Sales") +
+  theme(strip.text.x = element_text(size=12, face="bold"),
+          strip.text.y = element_text(size=12, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))
+
+
+
+
+```
+
+
+####3.2 How top 5 brokers distributed their investment/purchase among all fund categories
+  
+
+```{r,echo=FALSE, results='hide', message=FALSE, warning=FALSE,fig.width=9, fig.height=9}
+#qplot
+qplot(fund_category, total_sales, data=total_sales_final, geom= "point",colour=broker_name,
+      size= total_sales) +
+  facet_wrap(~broker_name, ncol=1)+
+  theme(text = element_text(),
+        axis.text.x = element_text(angle=45, vjust=1,size="8",face="bold"),
+        axis.title=element_text(face="bold.italic",size="10", color="brown"),
+        plot.title=element_text(family="Times", face="bold", size=12))+
+  ggtitle("Industry Mutual Fund Sales Overview
+  (How top 5 brokers distributed their purchase among all categories")+
+  xlab ("fund category")+
+  ylab(" Sum of Sales")+
+  theme(strip.text.x = element_text(size=12, face="bold"),
+          strip.text.y = element_text(size=12, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))
+
+
+#qplot
+qplot(broker_name, total_sales, data=total_sales_final, geom= "point",colour=fund_category,
+      size= total_sales) +
+  facet_wrap(~fund_category)+
+  theme(text = element_text(),
+        axis.text.x = element_text(angle=45, vjust=1,size="8",face="bold"),
+        axis.title=element_text(face="bold.italic",size="10", color="brown"),
+        plot.title=element_text(family="Times", face="bold", size=12))+
+  ggtitle("Layout 2: Industry Mutual Fund Sales Overview
+  (How top 5 brokers distributed their purchase among all categories")+
+  xlab ("top 5 high performing brokers")+
+  ylab(" Sum of Sales")+
+  theme(strip.text.x = element_text(size=10, face="bold"),
+          strip.text.y = element_text(size=10, face="bold"),
+          strip.background = element_rect(colour="#CC6666", fill="#9999CC"))
+
+
+
+```
+
+
+* Multi Asset Alloc is the one that 4 out of the top 5 brokers have been purchased.
+
+***
+
+
+
+
+  
+
+
+
+
