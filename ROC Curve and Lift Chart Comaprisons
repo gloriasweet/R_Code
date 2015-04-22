@@ -1,0 +1,51 @@
+setwd("C:/Users/Gloria/Documents")
+data1<-read.csv("mopub_ios_site_temp1.csv")
+data2<-read.csv("mopub_ios_ID_temp1.csv")
+colnames(data1)<-c("mashup_site","ctr","clicked")
+colnames(data2)<-c("mashup_ID","ctr","clicked")
+
+#CV
+set.seed(1234)
+index1<-sample(2, nrow(data1), replace=T, prob = c(0.7,0.3))
+train1 <- data1[index1 ==1,]
+test1 <- data1[index1 ==2,]
+
+fit1<-lm(clicked~ctr,data=train1)
+summary(fit1)
+
+#CV
+set.seed(1235)
+index2<-sample(2, nrow(data2), replace=T, prob = c(0.7,0.3))
+train2 <- data2[index2 ==1,]
+test2 <- data2[index2 ==2,]
+
+fit2<-lm(clicked~ctr,data=train2)
+summary(fit2)
+
+#ROCR
+install.packages('party')
+install.packages('ROCR')
+library(ROCR)
+
+#prediction
+test1$prediction1<-predict(fit1,newdata=test1)
+pred1 <- prediction(test1$prediction1,test1$clicked)
+perf1 <- performance(pred1, "tpr","fpr")
+plot(perf1,col=2,main="ROC Curve Comparison (MoPub iOS data)")
+
+test2$prediction2<-predict(fit2,newdata=test2)
+pred2 <- prediction(test2$prediction2,test2$clicked)
+perf2 <- performance(pred2, "tpr","fpr")
+plot(perf2,col=3,add=T)
+
+# Draw a legend.
+legend(0.6,0.8,c('site_base_url', 'website_ID'),2:3)
+
+# And then a lift chart
+perf.lift1 <- performance(pred1,"lift","rpp")
+plot(perf.lift1, main="lift Curve Comparison (MoPub iOS data)", col=2)
+
+perf.lift2 <- performance(pred2,"lift","rpp")
+plot(perf.lift2, col=3, add=T)
+# Draw a legend.
+legend(0.65,3.5,c('site_base_url', 'website_ID'),2:3)
