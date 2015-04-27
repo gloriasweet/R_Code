@@ -27,9 +27,7 @@ A subset of the overall data (combined first file and second file) where "client
 ####1.1 Statistical Six-Number Summary on "Client X" Fund Sales
 
 ```{r,echo=FALSE,message=FALSE}
-#data preparation
-setwd("/Users/Gloria/Desktop/Data Project")
-#setwd("/Users/getian/Desktop/JPM AM BI")
+
 data1<-read.csv("first_file.csv")
 data2<-read.csv("second_file.csv")
 data<-rbind(data1,data2)
