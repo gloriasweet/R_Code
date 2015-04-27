@@ -1,8 +1,3 @@
-setwd("C:/Users/Gloria/Documents")
-data1<-read.csv("mopub_ios_site_temp1.csv")
-data2<-read.csv("mopub_ios_ID_temp1.csv")
-colnames(data1)<-c("mashup_site","ctr","clicked")
-colnames(data2)<-c("mashup_ID","ctr","clicked")
 
 #CV
 set.seed(1234)
