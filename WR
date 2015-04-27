@@ -1,18 +1,5 @@
----
-title: "An overview of monthly performance - A discussion on Relationships among WinRate, VCR, AvgBidPrice and AvgWinPrice(eCPM) for Video Campaigns"
-author: "Gloria"
-date: "Monday, February 23, 2015"
-output: html_document
----
 
-***
-
-In this report, I'm looking at our monthly performances regarding video inventory win rate, video completion rate, monthly average bidding price and winning price (i.e. eCPM) for 97 major sites from video inventories on SpotX, LiveRail and MoPub, trying to understand the bidding and winning patterns and the potential relationships among them.
-
-Hope is to  
-  
-  
-(1).understand AdTheorent video inventories, answering questions like:  
+(1).understand video inventories, answering questions like:  
 
 * Why, on average, we bid $16-$22 and win with $8 on LiveRail whereas we bid $9-$10 and win $7-$8 on MoPub ?  
 * Does this indicate that we value too high on LiveRail inventory but our competitiors don't ?  
