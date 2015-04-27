@@ -1,10 +1,4 @@
 
-####Part I: Data Distribution  
-
-
-Firstly, let's look at the data distributions in terms of Win Rate, Average Bid Price, Average Win Price, VCR.
-
-
 
 ```{r, echo=FALSE, warning=FALSE,message=FALSE,results='hide'}
 install.packages("car",repos="http://cran.rstudio.com/")
