@@ -1,0 +1,1 @@
+var1<-replace(data$var1,which(data$var1=="value1"), "value_new")
